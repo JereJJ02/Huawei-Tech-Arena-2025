@@ -1,0 +1,576 @@
+<!DOCTYPE html>
+<html lang="fi">
+<head>
+ <link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Old+Standard+TT:wght@400;700&display=swap" rel="stylesheet">
+
+
+  <meta charset="UTF-8" />
+  <title>Kirjamainen UI – scrollattava sivunkääntö</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      /* 8 "askelta" scrollille – säädä sivumäärän mukaan */
+      min-height: 800vh;
+     font-family: "Old Standard TT", serif;
+      background: radial-gradient(circle at top, #fefcf6 0, #f2e9da 40%, #d4c9b5 75%, #a99f8a 100%);
+      color: #2b2518;
+      overflow-x: hidden;
+    }
+
+    .helper-text {
+      position: fixed;
+      top: 16px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(255, 255, 255, 0.85);
+      padding: 8px 16px;
+      border-radius: 999px;
+      font-size: 14px;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.15);
+      z-index: 999;
+      backdrop-filter: blur(8px);
+    }
+
+    .scene {
+      position: fixed;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      pointer-events: none;
+      perspective: 2000px;
+    }
+
+    .book {
+      position: relative;
+      width: clamp(300px, 70vw, 1100px);
+     aspect-ratio: 3 / 2;
+      transform-style: preserve-3d;
+      filter: drop-shadow(0 40px 60px rgba(0,0,0,0.35));
+    }
+
+    /* Kirjan "runko" – vasen ja oikea loota */
+    .book::before,
+    .book::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      border-radius: 18px;
+      background:
+        linear-gradient(90deg, #f5eee0 0, #fdf7eb 48%, #eacc9c 52%, #e6d9c3 100%);
+      box-shadow:
+        inset 0 0 0 1px rgba(0,0,0,0.05),
+        inset 20px 0 60px rgba(0,0,0,0.12);
+      transform: translateZ(-6px);
+    }
+
+    .book::after {
+      /* selkämyksen varjo */
+      background:
+        radial-gradient(circle at 50% 0, rgba(255,255,255,0.4), transparent 55%),
+        linear-gradient(90deg, #d6c8ae 0, #c7b99e 50%, #b9ad96 100%);
+      mix-blend-mode: multiply;
+      opacity: 0.9;
+      transform: translateZ(-8px);
+    }
+
+    /* Yksittäinen "lehti" (vain oikea sivu kääntyy) */
+    .page {
+  --turn-progress: 0;
+  position: absolute;
+  top: 0;
+  left: 50%;
+  width: 50%;
+  height: 100%;
+  padding: 32px 38px;
+
+  background-image: url("paper_texture.jpg");
+  background-size: cover;
+  background-blend-mode: multiply;
+
+  background:
+    /* tummuneet kulmat */
+    radial-gradient(circle at top left, rgba(0,0,0,0.12), transparent 55%),
+    radial-gradient(circle at top right, rgba(0,0,0,0.10), transparent 55%),
+    radial-gradient(circle at bottom left, rgba(0,0,0,0.15), transparent 55%),
+    radial-gradient(circle at bottom right, rgba(0,0,0,0.12), transparent 55%),
+
+    /* paperin rakeisuus */
+    repeating-linear-gradient(
+      0deg,
+      rgba(0,0,0,0.04) 0px,
+      rgba(0,0,0,0.04) 1px,
+      transparent 1px,
+      transparent 3px
+    ),
+    repeating-linear-gradient(
+      90deg,
+      rgba(0,0,0,0.04) 0px,
+      rgba(0,0,0,0.04) 1px,
+      transparent 1px,
+      transparent 4px
+    ),
+
+    /* kellastunut paperi */
+    linear-gradient(120deg, #f4e7c9 0%, #e9d9b6 40%, #e5d1a7 100%);
+
+  border-radius: 0 14px 14px 0;
+
+  /* kulumat reunoissa */
+  box-shadow:
+    inset 0 0 8px rgba(0,0,0,0.25),
+    inset 0 0 0 1px rgba(120,90,40,0.3),
+    0 12px 30px rgba(0,0,0,0.35);
+
+  transform-origin: left center;
+  transform-style: preserve-3d;
+  backface-visibility: hidden;
+  overflow: hidden;
+  pointer-events: auto;
+}
+
+
+    .page::after {
+      /* dynaaminen varjo, joka voimistuu kääntyessä */
+      content: "";
+      position: absolute;
+      inset: 0;
+      background:
+        linear-gradient(
+          to left,
+          rgba(0, 0, 0, 0.35),
+          rgba(0, 0, 0, 0.05),
+          rgba(255, 255, 255, 0)
+        );
+      mix-blend-mode: multiply;
+      opacity: calc(0.08 + var(--turn-progress) * 0.5);
+      pointer-events: none;
+    }
+
+    .page::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  border-radius: inherit;
+  background:
+    radial-gradient(circle at 30% 30%, rgba(255,255,255,0.15), transparent 70%),
+    radial-gradient(circle at 80% 70%, rgba(255,255,255,0.05), transparent 70%);
+
+  /* käpristyvä varjo */
+  box-shadow:
+    inset -25px 0 25px -20px rgba(0,0,0,0.35),
+    inset 25px 0 25px -20px rgba(0,0,0,0.25);
+}
+
+
+    .page-inner {
+  position: relative;
+  z-index: 1;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 16px;
+  padding-right: 6px;  /* sisemmän marginaalin hienosäätö */
+}
+
+    .page-header {
+      text-transform: uppercase;
+      letter-spacing: 0.16em;
+      font-size: 11px;
+      opacity: 0.55;
+    }
+
+    .page-title {
+      font-size: clamp(20px, 2.2vw, 26px);
+      font-weight: 600;
+      margin-bottom: 8px;
+      color: #24170c;
+    }
+
+    .page-subtitle {
+      font-size: 14px;
+      opacity: 0.7;
+      color: #4e3b2a;
+      position: relative;
+    }
+
+    .page-title::after {
+  content: "❦";
+  position: absolute;
+  left: 0;
+  top: 100%;
+  margin-top: 4px;
+  font-size: 18px;
+  color: #bf0000;
+}
+
+    .page-body p:first-of-type::first-letter {
+  float: left;
+  font-family: "Old Standard TT", serif;
+  font-weight: 700;
+  font-size: 4em;
+  line-height: 0.85;
+  padding-right: 0.18em;
+  margin-top: 0.04em;
+
+  color: #291c10;
+  text-shadow: 1px 1px 0 rgba(0,0,0,0.2);
+}
+
+    .page-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 11px;
+    opacity: 0.7;
+    color: #6b5740;
+    border-top: 1px solid rgba(120,90,50,0.15);
+    padding-top: 6px;
+    }
+
+    .page-footer .dots {
+      letter-spacing: 0.3em;
+      font-size: 10px;
+    }
+
+    /* Kannet */
+
+    .page.cover {
+      background:
+        radial-gradient(circle at 20% 0, rgba(255,255,255,0.5) 0, transparent 55%),
+        linear-gradient(135deg, #523437, #3a2326);
+      color: #fdf5e8;
+      box-shadow:
+        inset 0 0 0 1px rgba(255,255,255,0.12),
+        0 20px 40px rgba(0,0,0,0.5);
+    }
+
+    .page.cover::after {
+      background:
+        radial-gradient(circle at 0 0, rgba(255,255,255,0.45), transparent 60%),
+        linear-gradient(to left, rgba(0,0,0,0.7), transparent 50%);
+      opacity: calc(0.2 + var(--turn-progress) * 0.5);
+    }
+
+    .page.cover .page-inner {
+      align-items: flex-start;
+      justify-content: space-between;
+    }
+
+    .page.cover.front .page-title {
+      font-size: clamp(26px, 3vw, 32px);
+      letter-spacing: 0.08em;
+    }
+
+    .page.cover.front .page-subtitle {
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      font-size: 11px;
+      opacity: 0.8;
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 10px;
+      border-radius: 999px;
+      background: rgba(0,0,0,0.45);
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+    }
+
+    .badge-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: #f9e2a6;
+    }
+
+    .page.cover.back {
+      align-items: flex-end;
+      text-align: right;
+      background:
+        radial-gradient(circle at 80% 0, rgba(255,255,255,0.35) 0, transparent 55%),
+        linear-gradient(135deg, #3b2b2c, #25171a);
+    }
+
+    .page.cover.back .page-inner {
+      align-items: flex-end;
+    }
+
+    .page.cover.back .page-body {
+      font-size: 12px;
+      opacity: 0.9;
+    }
+
+    .small-label {
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 0.18em;
+      opacity: 0.75;
+    }
+
+    /* Pieni "scroll progress" -viivasto alareunaan (visuaalinen vihje) */
+
+    .scroll-indicator {
+      position: fixed;
+      bottom: 18px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: min(280px, 70vw);
+      display: flex;
+      gap: 4px;
+      z-index: 999;
+    }
+
+    .scroll-indicator span {
+      flex: 1;
+      height: 2px;
+      border-radius: 999px;
+      background: rgba(0,0,0,0.1);
+      overflow: hidden;
+      position: relative;
+    }
+
+    .scroll-indicator span::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      transform-origin: left;
+      transform: scaleX(0);
+      background: linear-gradient(90deg, #f8c16a, #fbe8b5);
+    }
+
+    .scroll-indicator span.active::after {
+      transform: scaleX(1);
+    }
+
+    @media (max-width: 640px) {
+      .page {
+        padding: 18px 20px;
+      }
+
+      .page-body {
+        font-size: 13px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="helper-text">
+    Scrollaa alas kääntääksesi sivuja 📖
+  </div>
+
+  <div class="scene">
+    <div class="book" id="book">
+      <!-- 1: Etukansi -->
+      <article class="page cover front">
+        <div class="page-inner">
+          <header>
+            <div class="badge">
+              <span class="badge-dot"></span>
+              <span>Interactive Story</span>
+            </div>
+            <h1 class="page-title">Verkkosivun Kirja</h1>
+            <p class="page-subtitle">Scrollattava sivukääntö-efekti</p>
+          </header>
+          <footer class="page-footer">
+            <span class="small-label">Tehty demona</span>
+            <span>© 2025</span>
+          </footer>
+        </div>
+      </article>
+
+      <!-- 2: Sisäsivu -->
+      <article class="page">
+        <div class="page-inner">
+          <header>
+            <div class="page-header">Luku 1</div>
+            <h2 class="page-title">Miten tämä toimii?</h2>
+            <p class="page-subtitle">
+              Sivunkääntö sidotaan suoraan vierityksen etenemiseen.
+            </p>
+          </header>
+          <div class="page-body">
+            <p>
+              Tämä kirja on toteutettu pelkällä <strong>HTML + CSS + JavaScript</strong> -yhdistelmällä.
+              Kirja pysyy paikoillaan keskellä näkymää, ja ainoa asia johon käyttäjä vaikuttaa,
+              on vierityksen määrä.
+            </p>
+            <p>
+              Vierityksen suhteellinen eteneminen muunnetaan jokaiselle sivulle omaksi
+              <em>0–180°</em> käännökseksi. Sivuilla on myös varjostus, joka voimistuu
+              käännön edetessä, jolloin efekti näyttää fyysisemmältä.
+            </p>
+          </div>
+          <footer class="page-footer">
+            <span>Kirjamainen UI</span>
+            <span class="dots">··· 1 ···</span>
+          </footer>
+        </div>
+      </article>
+
+      <!-- 3: Sisäsivu -->
+      <article class="page">
+        <div class="page-inner">
+          <header>
+            <div class="page-header">Luku 2</div>
+            <h2 class="page-title">Rakenne sivujen takana</h2>
+            <p class="page-subtitle">
+              Jokainen elementti on "lehti", joka kääntyy muiden päällä.
+            </p>
+          </header>
+          <div class="page-body">
+            <p>
+              Jokainen <code>.page</code>-elementti on oikean puolen sivu, jonka
+              <code>transform-origin</code> on vasemmassa reunassa. Kun se
+              käännetään <code>rotateY</code>-muunnoksella negatiiviseen kulmaan,
+              se ikään kuin kääntyy oikealta vasemmalle, kuten oikeanpuoleinen
+              sivu aidossa kirjassa.
+            </p>
+            <p>
+              Lisäksi sivulle annetaan pieni <code>translateZ</code>-syvyys sekä
+              dynaaminen <code>box-shadow</code>, jotta sivut eivät mene täysin
+              "tasaisesti" päällekkäin.
+            </p>
+          </div>
+          <footer class="page-footer">
+            <span>Rakennemalli</span>
+            <span class="dots">··· 2 ···</span>
+          </footer>
+        </div>
+      </article>
+
+      <!-- 4: Sisäsivu -->
+      <article class="page">
+        <div class="page-inner">
+          <header>
+            <div class="page-header">Luku 3</div>
+            <h2 class="page-title">Miten otan tämän käyttöön?</h2>
+            <p class="page-subtitle">
+              Kopioi, muokkaa tekstit, lisää sivuja.
+            </p>
+          </header>
+          <div class="page-body">
+            <p>
+              Käytännössä riittää, että kopioit tämän tiedoston omalle palvelimellesi
+              ja muokkaat sivujen sisältöä. Voit lisätä uusia sivuja
+              kopioimalla <code>&lt;article class="page"&gt;...&lt;/article&gt;</code>
+              -blokkeja.
+            </p>
+            <p>
+              Muista myös säätää <code>body { min-height: ... }</code>-arvoa, jotta
+              vieritystä riittää jokaiselle sivulle. Esimerkissä on neljä "lehteä":
+              etukansi, kolme sisäsivua ja takakansi.
+            </p>
+          </div>
+          <footer class="page-footer">
+            <span>Integrointi</span>
+            <span class="dots">··· 3 ···</span>
+          </footer>
+        </div>
+      </article>
+
+      <!-- 5: Takakansi -->
+      <article class="page cover back">
+        <div class="page-inner">
+          <header>
+            <div class="small-label">Loppu</div>
+            <h2 class="page-title">Kiitos vierailusta</h2>
+          </header>
+          <div class="page-body">
+            <p>
+              Tästä layoutista on helppo tehdä esimerkiksi tarinallinen
+              esittely, portfolio, tuotteen "story book" tai interaktiivinen
+              dokumentaatio.
+            </p>
+            <p>
+              Halutessasi voit yhdistää tämän React-, Vue- tai muuhun
+              frontend-frameworkiin ja hakea sivujen sisällöt esimerkiksi
+              CMS-järjestelmästä.
+            </p>
+          </div>
+          <footer class="page-footer">
+            <span>Scrollaa ylös aloittaaksesi alusta</span>
+            <span>📖</span>
+          </footer>
+        </div>
+      </article>
+    </div>
+  </div>
+
+  <!-- Pieni "sivuaskel"-indikaattori -->
+  <div class="scroll-indicator" id="scroll-indicator">
+    <!-- Tänne luodaan span-elementit JS:llä sivujen määrästä -->
+  </div>
+
+  <script>
+    (function () {
+      const pages = Array.from(document.querySelectorAll('.page'));
+      const totalLeaves = pages.length; // jokainen .page on yksi "lehti"
+      const indicator = document.getElementById('scroll-indicator');
+
+      // Luodaan scroll-indikaattori sivujen määrän mukaan
+      pages.forEach(() => {
+        const span = document.createElement('span');
+        indicator.appendChild(span);
+      });
+      const indicatorSpans = Array.from(indicator.querySelectorAll('span'));
+
+      function clamp(v, min, max) {
+        return Math.min(Math.max(v, min), max);
+      }
+
+      function updatePages() {
+        const doc = document.documentElement;
+        const maxScroll = doc.scrollHeight - window.innerHeight;
+        const rawProgress = maxScroll > 0 ? window.scrollY / maxScroll : 0;
+        const progress = clamp(rawProgress, 0, 1);
+
+        pages.forEach((page, index) => {
+          const start = index / totalLeaves;
+          const end = (index + 1) / totalLeaves;
+
+          let local = (progress - start) / (end - start);
+          local = clamp(local, 0, 1);
+
+          const angle = -local * 180; // 0° → -180° (kääntyy oikealta vasemmalle)
+          const depth = (totalLeaves - index) * 0.4; // pieni syvyys
+
+          page.style.transform =
+            'translateZ(' + depth + 'px) rotateY(' + angle + 'deg)';
+          page.style.setProperty('--turn-progress', String(local));
+          page.style.zIndex = String(totalLeaves - index);
+        });
+
+        // päivitä indikaattori
+        const activeIndex = Math.floor(progress * totalLeaves);
+        indicatorSpans.forEach((span, i) => {
+          if (i <= activeIndex) {
+            span.classList.add('active');
+          } else {
+            span.classList.remove('active');
+          }
+        });
+      }
+
+      window.addEventListener('scroll', updatePages);
+      window.addEventListener('resize', updatePages);
+      updatePages();
+    })();
+  </script>
+</body>
+</html>
