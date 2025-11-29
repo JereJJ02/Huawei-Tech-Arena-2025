@@ -1,11 +1,171 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Document</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Old+Standard+TT:wght@400;700&display=swap" rel="stylesheet">
+
+    <!-- Tämä muutettu alkuperäisestä. 
+     CSS on nyt kokonaan erillisessä CSS tiedostossa, toimii edelleen samalla tavalla. -->
+    <link rel="stylesheet" href="style.css">
 </head>
+
 <body>
-    
+    <div class="helper-text">
+        Scrollaa alas kääntääksesi sivuja 📖
+    </div>
+
+    <div class="scene">
+        <div class="book" id="book">
+            <!-- 1: Etukansi -->
+            <article class="page cover front">
+                <div class="page-inner">
+                    <header>
+                        <div class="badge">
+                            <span class="badge-dot"></span>
+                            <span>Interactive Story</span>
+                        </div>
+                        <h1 class="page-title">Verkkosivun Kirja</h1>
+                        <p class="page-subtitle">Scrollattava sivukääntö-efekti</p>
+                    </header>
+                    <footer class="page-footer">
+                        <span class="small-label">Tehty demona</span>
+                        <span>© 2025</span>
+                    </footer>
+                </div>
+            </article>
+
+            <!-- 2: Sisäsivu -->
+            <article class="page">
+                <div class="page-inner">
+                    <header>
+                        <div class="page-header">Luku 1</div>
+                        <h2 class="page-title">Miten tämä toimii?</h2>
+                        <p class="page-subtitle">
+                            Sivunkääntö sidotaan suoraan vierityksen etenemiseen.
+                        </p>
+                    </header>
+                    <div class="page-body">
+                        <p>
+                            Tämä kirja on toteutettu pelkällä <strong>HTML + CSS + JavaScript</strong> -yhdistelmällä.
+                            Kirja pysyy paikoillaan keskellä näkymää, ja ainoa asia johon käyttäjä vaikuttaa,
+                            on vierityksen määrä.
+                        </p>
+                        <p>
+                            Vierityksen suhteellinen eteneminen muunnetaan jokaiselle sivulle omaksi
+                            <em>0-180°</em> käännökseksi. Sivuilla on myös varjostus, joka voimistuu
+                            käännön edetessä, jolloin efekti näyttää fyysisemmältä.
+                        </p>
+                    </div>
+                    <footer class="page-footer">
+                        <span>Kirjamainen UI</span>
+                        <span class="dots">··· 1 ···</span>
+                    </footer>
+                </div>
+            </article>
+
+            <!-- 3: Sisäsivu -->
+            <article class="page">
+                <div class="page-inner">
+                    <header>
+                        <div class="page-header">Luku 2</div>
+                        <h2 class="page-title">Rakenne sivujen takana</h2>
+                        <p class="page-subtitle">
+                            Jokainen elementti on "lehti", joka kääntyy muiden päällä.
+                        </p>
+                    </header>
+                    <div class="page-body">
+                        <p>
+                            Jokainen <code>.page</code>-elementti on oikean puolen sivu, jonka
+                            <code>transform-origin</code> on vasemmassa reunassa. Kun se
+                            käännetään <code>rotateY</code>-muunnoksella negatiiviseen kulmaan,
+                            se ikään kuin kääntyy oikealta vasemmalle, kuten oikeanpuoleinen
+                            sivu aidossa kirjassa.
+                        </p>
+                        <p>
+                            Lisäksi sivulle annetaan pieni <code>translateZ</code>-syvyys sekä
+                            dynaaminen <code>box-shadow</code>, jotta sivut eivät mene täysin
+                            "tasaisesti" päällekkäin.
+                        </p>
+                    </div>
+                    <footer class="page-footer">
+                        <span>Rakennemalli</span>
+                        <span class="dots">··· 2 ···</span>
+                    </footer>
+                </div>
+            </article>
+
+            <!-- 4: Sisäsivu -->
+            <article class="page">
+                <div class="page-inner">
+                    <header>
+                        <div class="page-header">Luku 3</div>
+                        <h2 class="page-title">Miten otan tämän käyttöön?</h2>
+                        <p class="page-subtitle">
+                            Kopioi, muokkaa tekstit, lisää sivuja.
+                        </p>
+                    </header>
+                    <div class="page-body">
+                        <p>
+                            Käytännössä riittää, että kopioit tämän tiedoston omalle palvelimellesi
+                            ja muokkaat sivujen sisältöä. Voit lisätä uusia sivuja
+                            kopioimalla <code>&lt;article class="page"&gt;...&lt;/article&gt;</code>
+                            -blokkeja.
+                        </p>
+                        <p>
+                            Muista myös säätää <code>body { min-height: ... }</code>-arvoa, jotta
+                            vieritystä riittää jokaiselle sivulle. Esimerkissä on neljä "lehteä":
+                            etukansi, kolme sisäsivua ja takakansi.
+                        </p>
+                    </div>
+                    <footer class="page-footer">
+                        <span>Integrointi</span>
+                        <span class="dots">··· 3 ···</span>
+                    </footer>
+                </div>
+            </article>
+
+            <!-- 5: Takakansi -->
+            <article class="page cover back">
+                <div class="page-inner">
+                    <header>
+                        <div class="small-label">Loppu</div>
+                        <h2 class="page-title">Kiitos vierailusta</h2>
+                    </header>
+                    <div class="page-body">
+                        <p>
+                            Tästä layoutista on helppo tehdä esimerkiksi tarinallinen
+                            esittely, portfolio, tuotteen "story book" tai interaktiivinen
+                            dokumentaatio.
+                        </p>
+                        <p>
+                            Halutessasi voit yhdistää tämän React-, Vue- tai muuhun
+                            frontend-frameworkiin ja hakea sivujen sisällöt esimerkiksi
+                            CMS-järjestelmästä.
+                        </p>
+                    </div>
+                    <footer class="page-footer">
+                        <span>Scrollaa ylös aloittaaksesi alusta</span>
+                        <span>📖</span>
+                    </footer>
+                </div>
+            </article>
+        </div>
+    </div>
+
+    <!-- Pieni "sivuaskel"-indikaattori -->
+    <div class="scroll-indicator" id="scroll-indicator">
+        <!-- Tänne luodaan span-elementit JS:llä sivujen määrästä -->
+    </div>
+
+    <!-- Tämä muokattu aikaisemmasta!
+     Script on nyt kokonaan JavaScript tiedostossa, toimii edelleen samalla tavalla.-->
+    <script src="script.js"></script>
 </body>
+
 </html>
