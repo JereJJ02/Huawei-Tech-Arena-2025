@@ -38,7 +38,7 @@ function updatePages() {
     // päivitä indikaattori
     const activeIndex = Math.floor(progress * totalLeaves);
     indicatorSpans.forEach((span, i) => {
-        if (i <= activeIndex) {
+        if (i === activeIndex) {
             span.classList.add('active');
         } else {
             span.classList.remove('active');
